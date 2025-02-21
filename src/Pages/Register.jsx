@@ -1,30 +1,25 @@
-// File: src/pages/Login.jsx
+// File: src/pages/Register.jsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 
-export default function Login() {
-  const { login, googleLogin } = useAuth();
-  const navigate = useNavigate();
+export default function Register() {
+  const { createNewUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    try {
-      await login(email, password);
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
     }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError("");
     try {
-      await googleLogin();
+      await createNewUser(email, password);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -33,7 +28,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-2xl font-bold mb-4">Login</h1>
+      <h1 className="text-2xl font-bold mb-4">Register</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <form
         onSubmit={handleSubmit}
@@ -59,27 +54,23 @@ export default function Login() {
             required
           />
         </div>
+        <div className="mb-4">
+          <label className="block mb-1">Confirm Password</label>
+          <input
+            type="password"
+            className="w-full border p-2 rounded"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
         <button
           type="submit"
           className="bg-blue-500 text-white py-2 px-4 rounded"
         >
-          Login
+          Register
         </button>
       </form>
-      <div className="mt-4">
-        <button
-          onClick={handleGoogleLogin}
-          className="bg-red-500 text-white py-2 px-4 rounded"
-        >
-          Login with Google
-        </button>
-      </div>
-      <p className="mt-4">
-        Don't have an account?{" "}
-        <Link to="/register" className="text-blue-500 underline">
-          Register
-        </Link>
-      </p>
     </div>
   );
 }
