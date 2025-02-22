@@ -23,11 +23,6 @@ export default function AuthProvider({ children }) {
   // GoogleAuthProvider instance
   const googleProvider = new GoogleAuthProvider();
 
-  // OPTIONAL: If you want all axios calls to automatically include credentials,
-  // you can set this once here:
-  // axios.defaults.withCredentials = true;
-
-  // 1) Observe user state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -36,13 +31,15 @@ export default function AuthProvider({ children }) {
       // If we have a logged-in user, send their data to the backend
       if (currentUser) {
         const { displayName, email, photoURL, uid } = currentUser;
+        if (!email) {
+          console.error(
+            "Current user does not have an email; cannot send data to backend."
+          );
+          return;
+        }
         const userData = {
           name: displayName || "Unnamed user",
-          email:
-            email ||
-            (() => {
-              throw new Error("Email required");
-            })(),
+          email, // email is guaranteed to be defined here
           image: photoURL || "No image",
           firebaseUid: uid,
         };
@@ -50,20 +47,14 @@ export default function AuthProvider({ children }) {
         try {
           // Use withCredentials: true so the server can set a cookie
           await axios.post(
-            "https://todo-server-alpha-ashy.vercel.app/users",
+            "https://todo-server-alpha-sand.vercel.app/users",
             userData,
-            {
-              withCredentials: true,
-            }
+            { withCredentials: true }
           );
           console.log("User data sent to backend successfully!");
         } catch (error) {
           console.error("Error sending user data to the backend:", error);
         }
-      } else {
-        // currentUser is null => user signed out
-        // If your server uses cookies for auth, you might want to inform the server
-        // or rely on a logout endpoint that clears the cookie. It's optional.
       }
     });
 
@@ -129,7 +120,7 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 6) Another approach to update user profile with arbitrary fields
+  // 6) Update user profile with arbitrary fields
   const updateUserProfile = async (updates) => {
     if (!auth.currentUser) {
       throw new Error("No user is currently logged in.");
@@ -150,8 +141,7 @@ export default function AuthProvider({ children }) {
     try {
       await signOut(auth);
       setUser(null);
-      // Optionally, also call a backend logout endpoint that clears the cookie
-      // await axios.post("https://todo-server-alpha-ashy.vercel.app/api/logout", {}, { withCredentials: true });
+      // Optionally, call a backend logout endpoint to clear the cookie if needed
     } finally {
       setLoading(false);
     }
@@ -168,7 +158,7 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 9) Provide these methods & data via context
+  // 9) Provide methods & data via context
   const authInfo = {
     user,
     setUser,
@@ -185,7 +175,6 @@ export default function AuthProvider({ children }) {
   return (
     <Authentication.Provider value={authInfo}>
       {loading ? (
-        // Show a loader/spinner while Firebase checks auth state
         <div className="flex items-center justify-center h-screen">
           <div className="text-blue-500 text-xl font-semibold">Loading...</div>
         </div>
