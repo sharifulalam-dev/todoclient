@@ -50,7 +50,7 @@ export default function AuthProvider({ children }) {
         try {
           // Use withCredentials: true so the server can set a cookie
           await axios.post(
-            "https://todo-server-gray-eight.vercel.app/users",
+            "https://todo-server-alpha-ashy.vercel.app/users",
             userData,
             {
               withCredentials: true,
@@ -151,7 +151,7 @@ export default function AuthProvider({ children }) {
       await signOut(auth);
       setUser(null);
       // Optionally, also call a backend logout endpoint that clears the cookie
-      // await axios.post("https://todo-server-gray-eight.vercel.app/api/logout", {}, { withCredentials: true });
+      // await axios.post("https://todo-server-alpha-ashy.vercel.app/api/logout", {}, { withCredentials: true });
     } finally {
       setLoading(false);
     }

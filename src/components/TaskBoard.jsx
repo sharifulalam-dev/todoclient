@@ -16,7 +16,7 @@ const TaskBoard = () => {
       try {
         // Include withCredentials here so the JWT cookie is sent
         const response = await axios.get(
-          "https://todo-server-gray-eight.vercel.app/tasks",
+          "https://todo-server-alpha-ashy.vercel.app/tasks",
           {
             withCredentials: true,
           }
@@ -29,7 +29,7 @@ const TaskBoard = () => {
 
     fetchTasks();
 
-    const socket = io("https://todo-server-gray-eight.vercel.app");
+    const socket = io("https://todo-server-alpha-ashy.vercel.app");
     socket.on("taskCreated", (newTask) => {
       setTasks((prev) => [...prev, newTask]);
     });
@@ -108,7 +108,7 @@ const TaskBoard = () => {
       const payload = finalColumn.map((t) => ({ _id: t._id, order: t.order }));
       try {
         await axios.post(
-          "https://todo-server-gray-eight.vercel.app/tasks/reorderColumn",
+          "https://todo-server-alpha-ashy.vercel.app/tasks/reorderColumn",
           {
             category: sourceCol,
             tasks: payload,
@@ -157,7 +157,7 @@ const TaskBoard = () => {
 
       try {
         await axios.post(
-          "https://todo-server-gray-eight.vercel.app/tasks/reorderColumn",
+          "https://todo-server-alpha-ashy.vercel.app/tasks/reorderColumn",
           {
             categoryUpdates: [
               { category: sourceCol, tasks: sourcePayload },
@@ -184,7 +184,7 @@ const TaskBoard = () => {
     try {
       const { _id, title, description, category } = updatedTask;
       const response = await axios.put(
-        `https://todo-server-gray-eight.vercel.app/tasks/${_id}`,
+        `https://todo-server-alpha-ashy.vercel.app/tasks/${_id}`,
         { title, description, category },
         { withCredentials: true }
       );
@@ -212,7 +212,7 @@ const TaskBoard = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(
-            `https://todo-server-gray-eight.vercel.app/tasks/${taskId}`,
+            `https://todo-server-alpha-ashy.vercel.app/tasks/${taskId}`,
             {
               withCredentials: true,
             }
