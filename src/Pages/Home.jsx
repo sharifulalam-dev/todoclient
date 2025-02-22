@@ -1,5 +1,3 @@
-// File: src/pages/Home.jsx
-
 import Particles from "@tsparticles/react";
 import { motion } from "framer-motion";
 import React from "react";
@@ -28,14 +26,11 @@ const Home = () => {
   ];
 
   const particlesInit = async (engine) => {
-    // Initiates the full tsparticles package
     await loadFull(engine);
   };
 
   return (
-    /* Main wrapper with normal z-index, so it’s not behind the background */
     <div className="relative min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden">
-      {/* Particles wrapper with negative z-index behind content */}
       <div className="absolute top-0 left-0 w-full h-full -z-10">
         <Particles
           id="tsparticles"
@@ -69,9 +64,7 @@ const Home = () => {
         />
       </div>
 
-      {/* Give some top padding so the hero text is not covered by a fixed/sticky navbar */}
       <div className="container mx-auto px-4 pt-24 pb-16 relative z-10">
-        {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -108,7 +101,6 @@ const Home = () => {
           </motion.div>
         </motion.div>
 
-        {/* Example "features" section (optional) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <motion.div

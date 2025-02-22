@@ -1,22 +1,18 @@
-// File: src/pages/Dashboard.jsx
-
 import React from "react";
 import TaskBoard from "../components/TaskBoard";
 import TaskForm from "../components/TaskForm";
 import useAuth from "../hooks/useAuth";
 
 export default function Dashboard() {
-  const { user } = useAuth(); // Access the logged-in user's data
+  const { user } = useAuth();
   console.log("Current user:", user);
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4 text-center">Dashboard</h1>
 
-      {/* Welcome Section */}
       {user && (
         <div className="flex items-center mb-6 bg-blue-200 justify-center p-4 rounded-lg">
-          {/* If user has a photoURL, display it */}
           {user.photoURL && (
             <img
               src={user.photoURL}
@@ -35,10 +31,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Task Form for creating a new task */}
       <TaskForm />
 
-      {/* TaskBoard: displays tasks with drag-and-drop functionality */}
       <TaskBoard />
     </div>
   );

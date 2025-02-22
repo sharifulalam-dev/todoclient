@@ -1,4 +1,3 @@
-// File: src/hooks/useAuth.js
 import { useContext } from "react";
 import { Authentication } from "../Authprovider/Authprovider";
 

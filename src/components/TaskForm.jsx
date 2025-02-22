@@ -1,4 +1,3 @@
-// File: src/components/TaskForm.jsx
 import axios from "axios";
 import React, { useState } from "react";
 
@@ -11,7 +10,6 @@ export default function TaskForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     if (!title) {
       setError("Title is required.");
       return;
@@ -26,7 +24,6 @@ export default function TaskForm() {
     }
 
     try {
-      // Include withCredentials so the JWT cookie is sent.
       const response = await axios.post(
         "https://todo-server-alpha-sand.vercel.app/tasks",
         {
@@ -37,14 +34,11 @@ export default function TaskForm() {
         { withCredentials: true }
       );
 
-      // Reset fields
       setTitle("");
       setDescription("");
       setCategory("To-Do");
       setError(null);
 
-      // Optionally handle the newly created task,
-      // e.g., showing a success message or adding it to local state
       console.log("Task added:", response.data);
     } catch (err) {
       console.error("Error adding task:", err);

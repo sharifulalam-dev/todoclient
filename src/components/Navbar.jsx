@@ -18,12 +18,10 @@ export default function Navbar() {
   return (
     <div className="max-w-11/12 mx-auto ">
       <nav className="sticky top-0 z-50 bg-blue-600 p-4 shadow-md flex items-center justify-between">
-        {/* Logo/Brand */}
         <div className="text-xl font-bold text-white">
           <Link to="/">Task Manager</Link>
         </div>
 
-        {/* Nav Links */}
         <div className="space-x-6 flex items-center">
           <Link
             to="/"

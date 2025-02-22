@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import Swal from "sweetalert2";
 
-// 1) Import the modal component.
 import EditTaskModal from "./EditTaskModal";
 
 const TaskBoard = () => {
@@ -14,7 +13,6 @@ const TaskBoard = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        // Include withCredentials here so the JWT cookie is sent
         const response = await axios.get(
           "https://todo-server-alpha-sand.vercel.app/tasks",
           {
@@ -73,7 +71,6 @@ const TaskBoard = () => {
     },
   };
 
-  // A small helper to reorder an array in-place
   const reorderList = (list, startIndex, endIndex) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
@@ -81,7 +78,6 @@ const TaskBoard = () => {
     return result;
   };
 
-  // DRAG & DROP: Reorder tasks in the frontend, then POST the entire column's new ordering
   const onDragEnd = async (result) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -89,24 +85,20 @@ const TaskBoard = () => {
     const sourceCol = source.droppableId;
     const destCol = destination.droppableId;
 
-    // 1) If same column, reorder within that array
     if (sourceCol === destCol) {
       const columnTasks = columns[sourceCol].tasks;
       const newList = reorderList(columnTasks, source.index, destination.index);
 
-      // Build final array for that column with updated 'order'
       const finalColumn = newList.map((task, idx) => ({
         ...task,
         order: idx,
       }));
 
-      // Rebuild tasks for local state
       let updated = tasks
         .filter((t) => t.category !== sourceCol)
         .concat(finalColumn);
       setTasks(updated);
 
-      // Send the entire new ordering for that column to the server
       const payload = finalColumn.map((t) => ({ _id: t._id, order: t.order }));
       try {
         await axios.post(
@@ -121,14 +113,12 @@ const TaskBoard = () => {
         console.error("Error reordering column:", error);
       }
     } else {
-      // 2) Moving a task between different columns
       const sourceTasks = Array.from(columns[sourceCol].tasks);
       const [movedTask] = sourceTasks.splice(source.index, 1);
 
       const destTasks = Array.from(columns[destCol].tasks);
       destTasks.splice(destination.index, 0, movedTask);
 
-      // Update 'order' and 'category' in memory
       const newSource = sourceTasks.map((t, idx) => ({
         ...t,
         order: idx,
@@ -139,14 +129,12 @@ const TaskBoard = () => {
         order: idx,
       }));
 
-      // Rebuild the entire tasks array
       let updatedAll = tasks.filter(
         (t) => t.category !== sourceCol && t.category !== destCol
       );
       updatedAll = [...updatedAll, ...newSource, ...newDest];
       setTasks(updatedAll);
 
-      // Prepare server payload
       const sourcePayload = newSource.map((t) => ({
         _id: t._id,
         order: t.order,
@@ -174,14 +162,10 @@ const TaskBoard = () => {
     }
   };
 
-  // ============ EDIT & DELETE LOGIC ============
-
-  // Launch modal
   const handleEdit = (task) => {
     setEditTask(task);
   };
 
-  // Update task
   const handleTaskUpdate = async (updatedTask) => {
     try {
       const { _id, title, description, category } = updatedTask;
@@ -200,7 +184,7 @@ const TaskBoard = () => {
     }
   };
 
-  // Delete task
+
   const handleDelete = async (taskId) => {
     Swal.fire({
       title: "Are you sure?",
@@ -396,7 +380,6 @@ const TaskBoard = () => {
         </DragDropContext>
       </div>
 
-      {/* 2) Conditionally render the EditTaskModal if editTask is not null */}
       {editTask && (
         <EditTaskModal
           task={editTask}

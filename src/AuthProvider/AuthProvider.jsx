@@ -1,4 +1,3 @@
-// File: src/contexts/AuthProvider.jsx
 import axios from "axios";
 import {
   createUserWithEmailAndPassword,
@@ -13,14 +12,12 @@ import {
 import React, { createContext, useEffect, useState } from "react";
 import auth from "../Firebase/firebase.config";
 
-// Create the context
 export const Authentication = createContext();
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // GoogleAuthProvider instance
   const googleProvider = new GoogleAuthProvider();
 
   useEffect(() => {
@@ -28,7 +25,6 @@ export default function AuthProvider({ children }) {
       setUser(currentUser);
       setLoading(false);
 
-      // If we have a logged-in user, send their data to the backend
       if (currentUser) {
         const { displayName, email, photoURL, uid } = currentUser;
         if (!email) {
@@ -39,13 +35,12 @@ export default function AuthProvider({ children }) {
         }
         const userData = {
           name: displayName || "Unnamed user",
-          email, // email is guaranteed to be defined here
+          email,
           image: photoURL || "No image",
           firebaseUid: uid,
         };
 
         try {
-          // Use withCredentials: true so the server can set a cookie
           await axios.post(
             "https://todo-server-alpha-sand.vercel.app/users",
             userData,
@@ -58,11 +53,9 @@ export default function AuthProvider({ children }) {
       }
     });
 
-    // Cleanup listener on unmount
     return () => unsubscribe();
   }, []);
 
-  // 2) Create user with email/password
   const createNewUser = async (email, password) => {
     setLoading(true);
     try {
@@ -77,7 +70,6 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 3) Login with email/password
   const login = async (email, password) => {
     setLoading(true);
     try {
@@ -92,7 +84,6 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 4) Google sign-in
   const googleLogin = async () => {
     setLoading(true);
     try {
@@ -103,7 +94,6 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 5) Update user profile (displayName, photoURL, etc.)
   const manageUser = async (name, imageUrl) => {
     if (auth.currentUser) {
       setLoading(true);
@@ -112,7 +102,7 @@ export default function AuthProvider({ children }) {
           displayName: name,
           photoURL: imageUrl,
         });
-        // Merge new fields into local `user` state
+
         setUser({ ...auth.currentUser, displayName: name, photoURL: imageUrl });
       } finally {
         setLoading(false);
@@ -120,7 +110,6 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 6) Update user profile with arbitrary fields
   const updateUserProfile = async (updates) => {
     if (!auth.currentUser) {
       throw new Error("No user is currently logged in.");
@@ -135,19 +124,16 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 7) Logout
   const logOut = async () => {
     setLoading(true);
     try {
       await signOut(auth);
       setUser(null);
-      // Optionally, call a backend logout endpoint to clear the cookie if needed
     } finally {
       setLoading(false);
     }
   };
 
-  // 8) Send password reset email
   const forgetPassword = async (email) => {
     setLoading(true);
     try {
@@ -158,7 +144,7 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // 9) Provide methods & data via context
+
   const authInfo = {
     user,
     setUser,

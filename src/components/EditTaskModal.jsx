@@ -1,4 +1,3 @@
-// File: src/components/EditTaskModal.jsx
 import React, { useEffect, useState } from "react";
 
 export default function EditTaskModal({ task, onClose, onUpdate }) {
@@ -15,8 +14,8 @@ export default function EditTaskModal({ task, onClose, onUpdate }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const updatedTask = { ...task, title, description, category };
-    onUpdate(updatedTask); // Pass the updated task to parent component
-    onClose(); // Close the modal
+    onUpdate(updatedTask);
+    onClose();
   };
 
   return (
