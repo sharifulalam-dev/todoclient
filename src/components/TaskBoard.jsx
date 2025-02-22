@@ -3,6 +3,8 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import Swal from "sweetalert2";
+
+// 1) Import the modal component.
 import EditTaskModal from "./EditTaskModal";
 
 const TaskBoard = () => {
@@ -218,120 +220,184 @@ const TaskBoard = () => {
     });
   };
 
-  // ============ RENDER ============
+  return (
+    <>
+      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+        List Of Activity
+      </h1>
+      <div className="min-h-screen bg-gray-50 p-8">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-6  pb-4 px- justify-between flex-col md:flex-row">
+            {Object.values(columns).map((column) => (
+              <Droppable key={column.id} droppableId={column.id}>
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className={`
+                      rounded-xl p-4 w-80 flex-shrink-0 shadow-sm
+                      ${column.id === "To-Do" && "bg-red-50"}
+                      ${column.id === "In Progress" && "bg-amber-50"}
+                      ${column.id === "Done" && "bg-green-50"}
+                      min-h-[500px] border border-gray-100
+                    `}
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3
+                        className={`
+                          text-lg font-semibold 
+                          ${column.id === "To-Do" && "text-red-600"}
+                          ${column.id === "In Progress" && "text-amber-600"}
+                          ${column.id === "Done" && "text-green-600"}
+                        `}
+                      >
+                        {column.title}
+                      </h3>
+                      <span
+                        className={`
+                          px-2.5 py-1 rounded-full text-sm
+                          ${column.id === "To-Do" && "bg-red-100 text-red-700"}
+                          ${
+                            column.id === "In Progress" &&
+                            "bg-amber-100 text-amber-700"
+                          }
+                          ${
+                            column.id === "Done" &&
+                            "bg-green-100 text-green-700"
+                          }
+                        `}
+                      >
+                        {column.tasks.length}
+                      </span>
+                    </div>
 
-// ... (previous imports and code remain the same)
-
-return (
-  <div className="min-h-screen bg-gray-50 p-8">
-    <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-      List Of Activity
-    </h1>
-
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-6 overflow-x-auto pb-4 px-4">
-        {Object.values(columns).map((column) => (
-          <Droppable key={column.id} droppableId={column.id}>
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className={`
-                  rounded-xl p-4 w-80 flex-shrink-0 shadow-sm
-                  ${column.id === 'To-Do' && 'bg-red-50'}
-                  ${column.id === 'In Progress' && 'bg-amber-50'}
-                  ${column.id === 'Done' && 'bg-green-50'}
-                  min-h-[500px] border border-gray-100
-                `}
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className={`
-                    text-lg font-semibold 
-                    ${column.id === 'To-Do' && 'text-red-600'}
-                    ${column.id === 'In Progress' && 'text-amber-600'}
-                    ${column.id === 'Done' && 'text-green-600'}
-                  `}>
-                    {column.title}
-                  </h3>
-                  <span className={`
-                    px-2.5 py-1 rounded-full text-sm
-                    ${column.id === 'To-Do' && 'bg-red-100 text-red-700'}
-                    ${column.id === 'In Progress' && 'bg-amber-100 text-amber-700'}
-                    ${column.id === 'Done' && 'bg-green-100 text-green-700'}
-                  `}>
-                    {column.tasks.length}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {column.tasks.map((task, index) => (
-                    <Draggable
-                      key={task._id}
-                      draggableId={task._id}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`
-                            p-4 rounded-lg shadow-xs transition-all duration-200
-                            hover:shadow-md cursor-grab active:cursor-grabbing
-                            ${task.category === 'To-Do' && 'bg-white border-l-4 border-red-400 hover:border-red-500'}
-                            ${task.category === 'In Progress' && 'bg-white border-l-4 border-amber-400 hover:border-amber-500'}
-                            ${task.category === 'Done' && 'bg-white border-l-4 border-green-400 hover:border-green-500'}
-                          `}
+                    <div className="space-y-3">
+                      {column.tasks.map((task, index) => (
+                        <Draggable
+                          key={task._id}
+                          draggableId={task._id}
+                          index={index}
                         >
-                          <p className="text-gray-800 font-medium">{task.title}</p>
-                          {task.description && (
-                            <p className="text-gray-600 text-sm mt-2 line-clamp-2">
-                              {task.description}
-                            </p>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`
+                                p-4 rounded-lg shadow-xs transition-all duration-200
+                                hover:shadow-md cursor-grab active:cursor-grabbing
+                                ${
+                                  task.category === "To-Do" &&
+                                  "bg-white border-l-4 border-red-400 hover:border-red-500"
+                                }
+                                ${
+                                  task.category === "In Progress" &&
+                                  "bg-white border-l-4 border-amber-400 hover:border-amber-500"
+                                }
+                                ${
+                                  task.category === "Done" &&
+                                  "bg-white border-l-4 border-green-400 hover:border-green-500"
+                                }
+                              `}
+                            >
+                              <p className="text-gray-800 font-medium">
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                                  {task.description}
+                                </p>
+                              )}
+                              <div className="flex justify-end mt-3 space-x-2">
+                                <button
+                                  onClick={() => handleEdit(task)}
+                                  className={`
+                                    p-1 rounded hover:bg-gray-100
+                                    ${
+                                      task.category === "To-Do" &&
+                                      "text-red-500 hover:text-red-700"
+                                    }
+                                    ${
+                                      task.category === "In Progress" &&
+                                      "text-amber-500 hover:text-amber-700"
+                                    }
+                                    ${
+                                      task.category === "Done" &&
+                                      "text-green-500 hover:text-green-700"
+                                    }
+                                  `}
+                                >
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(task._id)}
+                                  className={`
+                                    p-1 rounded hover:bg-gray-100
+                                    ${
+                                      task.category === "To-Do" &&
+                                      "text-red-500 hover:text-red-700"
+                                    }
+                                    ${
+                                      task.category === "In Progress" &&
+                                      "text-amber-500 hover:text-amber-700"
+                                    }
+                                    ${
+                                      task.category === "Done" &&
+                                      "text-green-500 hover:text-green-700"
+                                    }
+                                  `}
+                                >
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           )}
-                          <div className="flex justify-end mt-3 space-x-2">
-                            <button
-                              onClick={() => handleEdit(task)}
-                              className={`
-                                p-1 rounded hover:bg-gray-100
-                                ${task.category === 'To-Do' && 'text-red-500 hover:text-red-700'}
-                                ${task.category === 'In Progress' && 'text-amber-500 hover:text-amber-700'}
-                                ${task.category === 'Done' && 'text-green-500 hover:text-green-700'}
-                              `}
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(task._id)}
-                              className={`
-                                p-1 rounded hover:bg-gray-100
-                                ${task.category === 'To-Do' && 'text-red-500 hover:text-red-700'}
-                                ${task.category === 'In Progress' && 'text-amber-500 hover:text-amber-700'}
-                                ${task.category === 'Done' && 'text-green-500 hover:text-green-700'}
-                              `}
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                </div>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        ))}
+                        </Draggable>
+                      ))}
+                    </div>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
       </div>
-    </DragDropContext>
 
-    {/* EditTaskModal remains the same */}
-  </div>
-);
+      {/* 2) Conditionally render the EditTaskModal if editTask is not null */}
+      {editTask && (
+        <EditTaskModal
+          task={editTask}
+          onClose={() => setEditTask(null)}
+          onUpdate={handleTaskUpdate}
+        />
+      )}
+    </>
+  );
+};
 
 export default TaskBoard;

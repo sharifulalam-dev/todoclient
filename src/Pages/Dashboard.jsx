@@ -11,11 +11,11 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">Dashboard</h1>
 
       {/* Welcome Section */}
       {user && (
-        <div className="flex items-center mb-6">
+        <div className="flex items-center mb-6 bg-blue-200 justify-center p-4 rounded-lg">
           {/* If user has a photoURL, display it */}
           {user.photoURL && (
             <img

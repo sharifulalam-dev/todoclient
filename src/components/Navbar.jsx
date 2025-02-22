@@ -1,4 +1,3 @@
-// File: src/components/Navbar.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
@@ -17,27 +16,44 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="flex items-center justify-between p-4 bg-white shadow-md">
-      <div className="text-lg font-bold">
-        <Link to="/">Task Manager</Link>
-      </div>
-      <div className="space-x-4">
-        <Link to="/" className="hover:text-blue-500">
-          Home
-        </Link>
-        <Link to="/dashboard" className="hover:text-blue-500">
-          Dashboard
-        </Link>
-        {!user ? (
-          <Link to="/login" className="hover:text-blue-500">
-            Login
+    <div className="max-w-11/12 mx-auto ">
+      <nav className="sticky top-0 z-50 bg-blue-600 p-4 shadow-md flex items-center justify-between">
+        {/* Logo/Brand */}
+        <div className="text-xl font-bold text-white">
+          <Link to="/">Task Manager</Link>
+        </div>
+
+        {/* Nav Links */}
+        <div className="space-x-6 flex items-center">
+          <Link
+            to="/"
+            className="text-white hover:text-gray-200 transition-colors"
+          >
+            Home
           </Link>
-        ) : (
-          <button onClick={handleLogout} className="hover:text-blue-500">
-            Logout
-          </button>
-        )}
-      </div>
-    </nav>
+          <Link
+            to="/dashboard"
+            className="text-white hover:text-gray-200 transition-colors"
+          >
+            Dashboard
+          </Link>
+          {!user ? (
+            <Link
+              to="/login"
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              Login
+            </Link>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      </nav>
+    </div>
   );
 }
