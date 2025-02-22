@@ -1,247 +1,337 @@
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import axios from "axios";
-import React, { useEffect, useRef, useState } from "react";
-import { FaEdit, FaTrash } from "react-icons/fa"; // Import edit and delete icons
-import { io } from "socket.io-client";
+import React, { useEffect, useState } from "react";
+import io from "socket.io-client";
+import Swal from "sweetalert2";
+import EditTaskModal from "./EditTaskModal";
 
-const socket = io("http://localhost:9000");
+const TaskBoard = () => {
+  const [tasks, setTasks] = useState([]);
+  const [editTask, setEditTask] = useState(null);
 
-export default function TaskBoard() {
-  // State: tasks grouped by category
-  const [columns, setColumns] = useState({
-    todo: [],
-    "in-progress": [],
-    done: [],
-  });
-  const [draggingTaskId, setDraggingTaskId] = useState(null);
-  const [dragOverColumn, setDragOverColumn] = useState(null);
-  const dropHandledRef = useRef(false);
-
-  // Initialize socket connection and listen for updates
-  useEffect(() => {
-    socket.on("taskMoved", (updatedTask) => {
-      updateTaskInColumns(updatedTask);
-    });
-
-    return () => {
-      socket.off("taskMoved");
-    };
-  }, []);
-
-  // Fetch tasks from the backend and group them by category
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch("http://localhost:9000/tasks");
-        const tasks = await res.json();
-        const grouped = { todo: [], "in-progress": [], done: [] };
-        tasks.forEach((task) => {
-          if (task.category === "To-Do") {
-            grouped.todo.push(task);
-          } else if (task.category === "In Progress") {
-            grouped["in-progress"].push(task);
-          } else if (task.category === "Done") {
-            grouped.done.push(task);
-          }
+        // Include withCredentials here so the JWT cookie is sent
+        const response = await axios.get("http://localhost:9000/tasks", {
+          withCredentials: true,
         });
-        setColumns(grouped);
+        setTasks(response.data);
       } catch (error) {
         console.error("Error fetching tasks:", error);
       }
     };
 
     fetchTasks();
+
+    const socket = io("http://localhost:9000");
+    socket.on("taskCreated", (newTask) => {
+      setTasks((prev) => [...prev, newTask]);
+    });
+    socket.on("taskMoved", (updatedTask) => {
+      setTasks((prev) =>
+        prev.map((t) => (t._id === updatedTask._id ? updatedTask : t))
+      );
+    });
+    socket.on("taskDeleted", (deletedId) => {
+      setTasks((prev) => prev.filter((task) => task._id !== deletedId));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
-  // Helper function to update task in columns state after a move
-  const updateTaskInColumns = (updatedTask) => {
-    setColumns((prevColumns) => {
-      const newColumns = { ...prevColumns };
-      // Remove the task from the old column
-      Object.keys(newColumns).forEach((col) => {
-        newColumns[col] = newColumns[col].filter(
-          (task) => task._id !== updatedTask._id
+  const columns = {
+    "To-Do": {
+      id: "To-Do",
+      title: "To Do",
+      tasks: tasks
+        .filter((task) => task.category === "To-Do")
+        .sort((a, b) => a.order - b.order),
+    },
+    "In Progress": {
+      id: "In Progress",
+      title: "In Progress",
+      tasks: tasks
+        .filter((task) => task.category === "In Progress")
+        .sort((a, b) => a.order - b.order),
+    },
+    Done: {
+      id: "Done",
+      title: "Done",
+      tasks: tasks
+        .filter((task) => task.category === "Done")
+        .sort((a, b) => a.order - b.order),
+    },
+  };
+
+  // A small helper to reorder an array in-place
+  const reorderList = (list, startIndex, endIndex) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
+  };
+
+  // DRAG & DROP: Reorder tasks in the frontend, then POST the entire column's new ordering
+  const onDragEnd = async (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    const sourceCol = source.droppableId;
+    const destCol = destination.droppableId;
+
+    // 1) If same column, reorder within that array
+    if (sourceCol === destCol) {
+      const columnTasks = columns[sourceCol].tasks;
+      const newList = reorderList(columnTasks, source.index, destination.index);
+
+      // Build final array for that column with updated 'order'
+      const finalColumn = newList.map((task, idx) => ({
+        ...task,
+        order: idx,
+      }));
+
+      // Rebuild tasks for local state
+      let updated = tasks
+        .filter((t) => t.category !== sourceCol)
+        .concat(finalColumn);
+      setTasks(updated);
+
+      // Send the entire new ordering for that column to the server
+      const payload = finalColumn.map((t) => ({ _id: t._id, order: t.order }));
+      try {
+        await axios.post(
+          "http://localhost:9000/tasks/reorderColumn",
+          {
+            category: sourceCol,
+            tasks: payload,
+          },
+          { withCredentials: true }
         );
-      });
-      // Add the task to the new category
-      newColumns[updatedTask.category].push(updatedTask);
-      return newColumns;
-    });
-  };
-
-  // Helper: update task in the database and emit socket event
-  const updateTaskInDB = async (task, targetColumn, targetIndex) => {
-    const updateData = { category: targetColumn, order: targetIndex };
-    try {
-      const res = await axios.put(
-        `http://localhost:9000/tasks/${task._id}`,
-        updateData
-      );
-      if (res.status === 200) {
-        socket.emit("taskMoved", { ...task, ...updateData });
-      } else {
-        console.error("Failed to update task:", res.data.message);
+      } catch (error) {
+        console.error("Error reordering column:", error);
       }
-    } catch (error) {
-      console.error("Error updating task in DB:", error);
+    } else {
+      // 2) Moving a task between different columns
+      const sourceTasks = Array.from(columns[sourceCol].tasks);
+      const [movedTask] = sourceTasks.splice(source.index, 1);
+
+      const destTasks = Array.from(columns[destCol].tasks);
+      destTasks.splice(destination.index, 0, movedTask);
+
+      // Update 'order' and 'category' in memory
+      const newSource = sourceTasks.map((t, idx) => ({
+        ...t,
+        order: idx,
+      }));
+      const newDest = destTasks.map((t, idx) => ({
+        ...t,
+        category: destCol,
+        order: idx,
+      }));
+
+      // Rebuild the entire tasks array
+      let updatedAll = tasks.filter(
+        (t) => t.category !== sourceCol && t.category !== destCol
+      );
+      updatedAll = [...updatedAll, ...newSource, ...newDest];
+      setTasks(updatedAll);
+
+      // Prepare server payload
+      const sourcePayload = newSource.map((t) => ({
+        _id: t._id,
+        order: t.order,
+      }));
+      const destPayload = newDest.map((t) => ({
+        _id: t._id,
+        order: t.order,
+        category: destCol,
+      }));
+
+      try {
+        await axios.post(
+          "http://localhost:9000/tasks/reorderColumn",
+          {
+            categoryUpdates: [
+              { category: sourceCol, tasks: sourcePayload },
+              { category: destCol, tasks: destPayload },
+            ],
+          },
+          { withCredentials: true }
+        );
+      } catch (error) {
+        console.error("Error reordering across columns:", error);
+      }
     }
   };
 
-  // Handle dragging start, store the task's column and index
-  const handleDragStart = (e, sourceColumn, index, taskId) => {
-    e.dataTransfer.effectAllowed = "move";
-    dropHandledRef.current = false;
-    setDraggingTaskId(taskId);
-    const dragData = { sourceColumn, index };
-    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+  // ============ EDIT & DELETE LOGIC ============
+
+  // Launch modal
+  const handleEdit = (task) => {
+    setEditTask(task);
   };
 
-  // Handle task drop (inside a column)
-  const handleDropOnTask = (e, targetColumn, targetIndex) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropHandledRef.current = true;
-    const data = e.dataTransfer.getData("application/json");
-    const { sourceColumn, index: sourceIndex } = JSON.parse(data);
-
-    if (sourceColumn === targetColumn && sourceIndex === targetIndex) return;
-
-    let movedTask = null;
-    setColumns((prev) => {
-      const newColumns = { ...prev };
-      const sourceTasks = [...newColumns[sourceColumn]];
-      const targetTasks = [...newColumns[targetColumn]];
-
-      movedTask = sourceTasks[sourceIndex];
-      sourceTasks.splice(sourceIndex, 1);
-      targetTasks.splice(targetIndex, 0, movedTask);
-
-      newColumns[sourceColumn] = sourceTasks;
-      newColumns[targetColumn] = targetTasks;
-
-      return newColumns;
-    });
-
-    if (movedTask) {
-      updateTaskInDB(movedTask, targetColumn, targetIndex);
-    }
-  };
-
-  // Handle drop on the container (when task is dropped into an empty space)
-  const handleDropOnContainer = (e, targetColumn) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dropHandledRef.current) {
-      dropHandledRef.current = false;
-      return;
-    }
-    const data = e.dataTransfer.getData("application/json");
-    const { sourceColumn, index: sourceIndex } = JSON.parse(data);
-
-    let movedTask = null;
-    setColumns((prev) => {
-      const newColumns = { ...prev };
-      const sourceTasks = [...newColumns[sourceColumn]];
-      if (sourceIndex >= sourceTasks.length) return prev;
-
-      movedTask = sourceTasks[sourceIndex];
-      sourceTasks.splice(sourceIndex, 1);
-      newColumns[sourceColumn] = sourceTasks;
-      newColumns[targetColumn] = [...newColumns[targetColumn], movedTask];
-      return newColumns;
-    });
-
-    if (movedTask) {
-      updateTaskInDB(movedTask, targetColumn, newColumns[targetColumn].length);
-    }
-  };
-
-  // Task column titles
-  const columnTitles = {
-    todo: "To Do",
-    "in-progress": "In Progress",
-    done: "Done",
-  };
-
-  // Delete task handler
-  const handleDelete = async (taskId) => {
+  // Update task
+  const handleTaskUpdate = async (updatedTask) => {
     try {
-      await axios.delete(`http://localhost:9000/tasks/${taskId}`);
-      socket.emit("taskDeleted", taskId);
-      // Remove task from the state
-      setColumns((prevColumns) => {
-        const newColumns = { ...prevColumns };
-        Object.keys(newColumns).forEach((col) => {
-          newColumns[col] = newColumns[col].filter(
-            (task) => task._id !== taskId
-          );
-        });
-        return newColumns;
-      });
+      const { _id, title, description, category } = updatedTask;
+      const response = await axios.put(
+        `http://localhost:9000/tasks/${_id}`,
+        { title, description, category },
+        { withCredentials: true }
+      );
+      const newTask = response.data;
+      setTasks((prev) =>
+        prev.map((t) => (t._id === newTask._id ? newTask : t))
+      );
+      setEditTask(null);
     } catch (error) {
-      console.error("Error deleting task:", error);
+      console.error("Error updating task:", error);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-4xl font-bold text-center mb-8">Task Board</h1>
-      <div className="flex flex-col md:flex-row gap-6">
-        {Object.keys(columns).map((colId) => (
-          <div key={colId} className="flex-1">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              {columnTitles[colId]}
-            </h2>
-            <div
-              className="p-4 rounded border transition-colors duration-200"
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnter={(e) => {
-                if (e.target === e.currentTarget) {
-                  setDragOverColumn(colId);
-                }
-              }}
-              onDragLeave={(e) => {
-                if (e.target === e.currentTarget) {
-                  setDragOverColumn(null);
-                }
-              }}
-              onDrop={(e) => handleDropOnContainer(e, colId)}
-            >
-              {columns[colId].map((task, index) => (
-                <div
-                  key={task._id}
-                  draggable
-                  onDragStart={(e) =>
-                    handleDragStart(e, colId, index, task._id)
-                  }
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDropOnTask(e, colId, index)}
-                  onDragEnd={() => setDraggingTaskId(null)}
-                  className="p-4 mb-3 bg-white rounded shadow cursor-move border border-gray-200"
-                >
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {task.title}
+  // Delete task
+  const handleDelete = async (taskId) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this task!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.delete(`http://localhost:9000/tasks/${taskId}`, {
+            withCredentials: true,
+          });
+          setTasks((prev) => prev.filter((t) => t._id !== taskId));
+          Swal.fire("Deleted!", "The task has been deleted.", "success");
+        } catch (error) {
+          console.error("Error deleting task:", error);
+        }
+      }
+    });
+  };
+
+  // ============ RENDER ============
+
+// ... (previous imports and code remain the same)
+
+return (
+  <div className="min-h-screen bg-gray-50 p-8">
+    <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+      List Of Activity
+    </h1>
+
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="flex gap-6 overflow-x-auto pb-4 px-4">
+        {Object.values(columns).map((column) => (
+          <Droppable key={column.id} droppableId={column.id}>
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className={`
+                  rounded-xl p-4 w-80 flex-shrink-0 shadow-sm
+                  ${column.id === 'To-Do' && 'bg-red-50'}
+                  ${column.id === 'In Progress' && 'bg-amber-50'}
+                  ${column.id === 'Done' && 'bg-green-50'}
+                  min-h-[500px] border border-gray-100
+                `}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className={`
+                    text-lg font-semibold 
+                    ${column.id === 'To-Do' && 'text-red-600'}
+                    ${column.id === 'In Progress' && 'text-amber-600'}
+                    ${column.id === 'Done' && 'text-green-600'}
+                  `}>
+                    {column.title}
                   </h3>
-                  <p className="text-gray-600">{task.description}</p>
-                  <div className="flex space-x-2 mt-2">
-                    <button
-                      onClick={() => handleDelete(task._id)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <FaTrash />
-                    </button>
-                    <button
-                      // Edit functionality can be implemented here
-                      className="text-blue-500 hover:text-blue-600"
-                    >
-                      <FaEdit />
-                    </button>
-                  </div>
+                  <span className={`
+                    px-2.5 py-1 rounded-full text-sm
+                    ${column.id === 'To-Do' && 'bg-red-100 text-red-700'}
+                    ${column.id === 'In Progress' && 'bg-amber-100 text-amber-700'}
+                    ${column.id === 'Done' && 'bg-green-100 text-green-700'}
+                  `}>
+                    {column.tasks.length}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
+
+                <div className="space-y-3">
+                  {column.tasks.map((task, index) => (
+                    <Draggable
+                      key={task._id}
+                      draggableId={task._id}
+                      index={index}
+                    >
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`
+                            p-4 rounded-lg shadow-xs transition-all duration-200
+                            hover:shadow-md cursor-grab active:cursor-grabbing
+                            ${task.category === 'To-Do' && 'bg-white border-l-4 border-red-400 hover:border-red-500'}
+                            ${task.category === 'In Progress' && 'bg-white border-l-4 border-amber-400 hover:border-amber-500'}
+                            ${task.category === 'Done' && 'bg-white border-l-4 border-green-400 hover:border-green-500'}
+                          `}
+                        >
+                          <p className="text-gray-800 font-medium">{task.title}</p>
+                          {task.description && (
+                            <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="flex justify-end mt-3 space-x-2">
+                            <button
+                              onClick={() => handleEdit(task)}
+                              className={`
+                                p-1 rounded hover:bg-gray-100
+                                ${task.category === 'To-Do' && 'text-red-500 hover:text-red-700'}
+                                ${task.category === 'In Progress' && 'text-amber-500 hover:text-amber-700'}
+                                ${task.category === 'Done' && 'text-green-500 hover:text-green-700'}
+                              `}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(task._id)}
+                              className={`
+                                p-1 rounded hover:bg-gray-100
+                                ${task.category === 'To-Do' && 'text-red-500 hover:text-red-700'}
+                                ${task.category === 'In Progress' && 'text-amber-500 hover:text-amber-700'}
+                                ${task.category === 'Done' && 'text-green-500 hover:text-green-700'}
+                              `}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                </div>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         ))}
       </div>
-    </div>
-  );
-}
+    </DragDropContext>
+
+    {/* EditTaskModal remains the same */}
+  </div>
+);
+
+export default TaskBoard;

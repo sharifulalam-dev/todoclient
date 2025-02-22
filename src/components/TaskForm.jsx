@@ -26,16 +26,26 @@ export default function TaskForm() {
     }
 
     try {
-      const response = await axios.post("http://localhost:9000/tasks", {
-        title,
-        description,
-        category,
-      });
+      // Include withCredentials so the JWT cookie is sent.
+      const response = await axios.post(
+        "http://localhost:9000/tasks",
+        {
+          title,
+          description,
+          category,
+        },
+        { withCredentials: true }
+      );
+
+      // Reset fields
       setTitle("");
       setDescription("");
       setCategory("To-Do");
       setError(null);
-      console.log("Task added:", response.data); // You can add logic to handle the newly created task
+
+      // Optionally handle the newly created task,
+      // e.g., showing a success message or adding it to local state
+      console.log("Task added:", response.data);
     } catch (err) {
       console.error("Error adding task:", err);
       setError("Error adding task. Please try again.");
@@ -45,6 +55,7 @@ export default function TaskForm() {
   return (
     <form onSubmit={handleSubmit} className="p-4 border rounded mb-4">
       {error && <p className="text-red-500 mb-2">{error}</p>}
+
       <div className="mb-2">
         <label className="block mb-1">Title:</label>
         <input
@@ -56,6 +67,7 @@ export default function TaskForm() {
           required
         />
       </div>
+
       <div className="mb-2">
         <label className="block mb-1">Description:</label>
         <textarea
@@ -65,6 +77,7 @@ export default function TaskForm() {
           maxLength={200}
         />
       </div>
+
       <div className="mb-2">
         <label className="block mb-1">Category:</label>
         <select
@@ -77,6 +90,7 @@ export default function TaskForm() {
           <option value="Done">Done</option>
         </select>
       </div>
+
       <button
         type="submit"
         className="bg-blue-500 text-white py-2 px-4 rounded"
