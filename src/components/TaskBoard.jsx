@@ -15,9 +15,12 @@ const TaskBoard = () => {
     const fetchTasks = async () => {
       try {
         // Include withCredentials here so the JWT cookie is sent
-        const response = await axios.get("http://localhost:9000/tasks", {
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          "https://todo-server-gray-eight.vercel.app/tasks",
+          {
+            withCredentials: true,
+          }
+        );
         setTasks(response.data);
       } catch (error) {
         console.error("Error fetching tasks:", error);
@@ -26,7 +29,7 @@ const TaskBoard = () => {
 
     fetchTasks();
 
-    const socket = io("http://localhost:9000");
+    const socket = io("https://todo-server-gray-eight.vercel.app");
     socket.on("taskCreated", (newTask) => {
       setTasks((prev) => [...prev, newTask]);
     });
@@ -105,7 +108,7 @@ const TaskBoard = () => {
       const payload = finalColumn.map((t) => ({ _id: t._id, order: t.order }));
       try {
         await axios.post(
-          "http://localhost:9000/tasks/reorderColumn",
+          "https://todo-server-gray-eight.vercel.app/tasks/reorderColumn",
           {
             category: sourceCol,
             tasks: payload,
@@ -154,7 +157,7 @@ const TaskBoard = () => {
 
       try {
         await axios.post(
-          "http://localhost:9000/tasks/reorderColumn",
+          "https://todo-server-gray-eight.vercel.app/tasks/reorderColumn",
           {
             categoryUpdates: [
               { category: sourceCol, tasks: sourcePayload },
@@ -181,7 +184,7 @@ const TaskBoard = () => {
     try {
       const { _id, title, description, category } = updatedTask;
       const response = await axios.put(
-        `http://localhost:9000/tasks/${_id}`,
+        `https://todo-server-gray-eight.vercel.app/tasks/${_id}`,
         { title, description, category },
         { withCredentials: true }
       );
@@ -208,9 +211,12 @@ const TaskBoard = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:9000/tasks/${taskId}`, {
-            withCredentials: true,
-          });
+          await axios.delete(
+            `https://todo-server-gray-eight.vercel.app/tasks/${taskId}`,
+            {
+              withCredentials: true,
+            }
+          );
           setTasks((prev) => prev.filter((t) => t._id !== taskId));
           Swal.fire("Deleted!", "The task has been deleted.", "success");
         } catch (error) {

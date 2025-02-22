@@ -49,9 +49,13 @@ export default function AuthProvider({ children }) {
 
         try {
           // Use withCredentials: true so the server can set a cookie
-          await axios.post("http://localhost:9000/users", userData, {
-            withCredentials: true,
-          });
+          await axios.post(
+            "https://todo-server-gray-eight.vercel.app/users",
+            userData,
+            {
+              withCredentials: true,
+            }
+          );
           console.log("User data sent to backend successfully!");
         } catch (error) {
           console.error("Error sending user data to the backend:", error);
@@ -147,7 +151,7 @@ export default function AuthProvider({ children }) {
       await signOut(auth);
       setUser(null);
       // Optionally, also call a backend logout endpoint that clears the cookie
-      // await axios.post("http://localhost:9000/api/logout", {}, { withCredentials: true });
+      // await axios.post("https://todo-server-gray-eight.vercel.app/api/logout", {}, { withCredentials: true });
     } finally {
       setLoading(false);
     }
