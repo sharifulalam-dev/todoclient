@@ -14,7 +14,7 @@ const TaskBoard = () => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get(
-          "https://todo-server-lovat.vercel.app/tasks",
+          "https://todoserver-w7kk.onrender.com/tasks",
           {
             withCredentials: true,
           }
@@ -27,7 +27,7 @@ const TaskBoard = () => {
 
     fetchTasks();
 
-    const socket = io("https://todo-server-lovat.vercel.app", {
+    const socket = io("https://todoserver-w7kk.onrender.com", {
       transports: ["websocket"],
     });
     socket.on("taskCreated", (newTask) => {
@@ -102,7 +102,7 @@ const TaskBoard = () => {
       const payload = finalColumn.map((t) => ({ _id: t._id, order: t.order }));
       try {
         await axios.post(
-          "https://todo-server-lovat.vercel.app/tasks/reorderColumn",
+          "https://todoserver-w7kk.onrender.com/tasks/reorderColumn",
           {
             category: sourceCol,
             tasks: payload,
@@ -147,7 +147,7 @@ const TaskBoard = () => {
 
       try {
         await axios.post(
-          "https://todo-server-lovat.vercel.app/tasks/reorderColumn",
+          "https://todoserver-w7kk.onrender.com/tasks/reorderColumn",
           {
             categoryUpdates: [
               { category: sourceCol, tasks: sourcePayload },
@@ -170,7 +170,7 @@ const TaskBoard = () => {
     try {
       const { _id, title, description, category } = updatedTask;
       const response = await axios.put(
-        `https://todo-server-lovat.vercel.app/tasks/${_id}`,
+        `https://todoserver-w7kk.onrender.com/tasks/${_id}`,
         { title, description, category },
         { withCredentials: true }
       );
@@ -197,7 +197,7 @@ const TaskBoard = () => {
       if (result.isConfirmed) {
         try {
           await axios.delete(
-            `https://todo-server-lovat.vercel.app/tasks/${taskId}`,
+            `https://todoserver-w7kk.onrender.com/tasks/${taskId}`,
             {
               withCredentials: true,
             }
