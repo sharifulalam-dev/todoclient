@@ -5,7 +5,6 @@ import useAuth from "../hooks/useAuth";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  console.log("Current user:", user);
 
   return (
     <div className="container mx-auto p-4">

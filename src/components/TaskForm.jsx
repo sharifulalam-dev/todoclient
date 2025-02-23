@@ -38,8 +38,6 @@ export default function TaskForm() {
       setDescription("");
       setCategory("To-Do");
       setError(null);
-
-      console.log("Task added:", response.data);
     } catch (err) {
       console.error("Error adding task:", err);
       setError("Error adding task. Please try again.");

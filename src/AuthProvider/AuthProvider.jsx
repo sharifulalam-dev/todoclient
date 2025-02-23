@@ -44,9 +44,10 @@ export default function AuthProvider({ children }) {
           await axios.post(
             "https://todoserver-w7kk.onrender.com/users",
             userData,
-            { withCredentials: true }
+            {
+              withCredentials: true,
+            }
           );
-          console.log("User data sent to backend successfully!");
         } catch (error) {
           console.error("Error sending user data to the backend:", error);
         }
