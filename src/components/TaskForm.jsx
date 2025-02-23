@@ -25,7 +25,7 @@ export default function TaskForm() {
 
     try {
       const response = await axios.post(
-        "https://todoserver-w7kk.onrender.com/tasks",
+        "https://todo-server-lovat.vercel.app/tasks",
         {
           title,
           description,

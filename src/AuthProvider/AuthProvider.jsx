@@ -42,7 +42,7 @@ export default function AuthProvider({ children }) {
 
         try {
           await axios.post(
-            "https://todoserver-w7kk.onrender.com/users",
+            "https://todo-server-lovat.vercel.app/users",
             userData,
             {
               withCredentials: true,
