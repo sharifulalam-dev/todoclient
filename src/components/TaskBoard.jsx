@@ -4,48 +4,67 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import Swal from "sweetalert2";
 
+import useAuth from "./../hooks/useAuth";
 import EditTaskModal from "./EditTaskModal";
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);
   const [editTask, setEditTask] = useState(null);
+  const user = useAuth();
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get(
           "https://todoserver-w7kk.onrender.com/tasks",
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
         setTasks(response.data);
       } catch (error) {
         console.error("Error fetching tasks:", error);
+        // Clear tasks if unauthorized
+        if (error.response?.status === 401) {
+          setTasks([]);
+        }
       }
     };
 
-    fetchTasks();
+    // Immediately fetch tasks when the component mounts
+    if (user) {
+      fetchTasks();
+    } else {
+      setTasks([]);
+    }
+
+    // Optionally, set up a polling interval to refresh tasks every 5 seconds
+    const intervalId = setInterval(() => {
+      if (user) fetchTasks();
+    }, 1000); // Adjust the interval (ms) as needed
 
     const socket = io("https://todoserver-w7kk.onrender.com", {
       transports: ["websocket"],
     });
+
     socket.on("taskCreated", (newTask) => {
       setTasks((prev) => [...prev, newTask]);
     });
+
     socket.on("taskMoved", (updatedTask) => {
       setTasks((prev) =>
         prev.map((t) => (t._id === updatedTask._id ? updatedTask : t))
       );
     });
+
     socket.on("taskDeleted", (deletedId) => {
       setTasks((prev) => prev.filter((task) => task._id !== deletedId));
     });
 
     return () => {
+      clearInterval(intervalId);
       socket.disconnect();
     };
-  }, []);
+  }, [user]);
+  // Dependency on user state
 
   const columns = {
     "To-Do": {

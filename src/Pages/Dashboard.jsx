@@ -32,6 +32,7 @@ export default function Dashboard() {
 
       <TaskForm />
 
+      {/* The key ensures a complete remount when the user changes */}
       <TaskBoard />
     </div>
   );
